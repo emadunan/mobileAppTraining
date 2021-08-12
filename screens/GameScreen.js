@@ -6,12 +6,14 @@ import {
   Alert,
   ScrollView,
   FlatList,
+  Dimensions,
 } from "react-native";
 import NumberContainer from "../components/NumberContainer";
 import Card from "../components/Card";
 import { Ionicons } from "@expo/vector-icons";
 import MainButton from "../components/MainButton";
 import TextBody from "../components/TextBody";
+import * as ScreenOrientation from "expo-screen-orientation";
 
 function generateRandomBetween(min, max, exclude) {
   min = Math.ceil(min);
@@ -27,7 +29,7 @@ function generateRandomBetween(min, max, exclude) {
 
 function renderListItem(listLength, itemData) {
   return (
-    <View key={value} style={styles.listItem}>
+    <View key={itemData.item} style={styles.listItem}>
       <TextBody>#{listLength - itemData.index}</TextBody>
       <TextBody>{itemData.item}</TextBody>
     </View>
@@ -35,13 +37,33 @@ function renderListItem(listLength, itemData) {
 }
 
 function GameScreen(props) {
+  ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+
   const initGuess = generateRandomBetween(1, 100, props.userChoice);
   const [currentGuess, setCurrentGuess] = useState(initGuess);
 
   const [pastGuesses, setPastGuesses] = useState([initGuess]);
 
+  const [deviceWidth, setDeviceWidth] = useState(Dimensions.get('window').width);
+  const [deviceHeight, setDeviceHeight] = useState(Dimensions.get('window').height);
+
   const currentLow = useRef(1);
   const currentHight = useRef(100);
+
+  useEffect(() => {
+
+    const updateLayout = () => {
+      setDeviceWidth(Dimensions.get('window').width);
+      setDeviceHeight(Dimensions.get('window').height);
+    }
+
+    Dimensions.addEventListener('change', updateLayout);
+
+    return () => {
+      Dimensions.removeEventListener('change', updateLayout);
+    }
+  });
+
 
   const { userChoice, onGameOver } = props;
 
@@ -78,6 +100,38 @@ function GameScreen(props) {
     setPastGuesses((prev) => [nextNumber, ...prev]);
   }
 
+  let listContainerStyles = styles.listContainer;
+  if (deviceWidth < 300) {
+    listContainerStyles = styles.listContainerSmall;
+  }
+
+  if (deviceHeight < 600) {
+    return (
+      <View style={styles.screen}>
+        <Text>Opponent's guess</Text>
+        <View style={{width: '80%', flexDirection: 'row', justifyContent: 'space-around'}}>
+          <MainButton style={styles.buttonLandscape} onPress={nextGuessHandler.bind(this, "lower")}>
+            <Ionicons name="md-remove" size={24} color="black" />
+          </MainButton>
+          <NumberContainer>{currentGuess}</NumberContainer>
+          <MainButton style={styles.buttonLandscape} onPress={nextGuessHandler.bind(this, "greater")}>
+            <Ionicons name="md-add" size={24} color="black" />
+          </MainButton>
+        </View>
+
+        <View style={listContainerStyles}>
+
+          <FlatList
+            keyExtractor={(item) => item.toString()}
+            data={pastGuesses}
+            renderItem={renderListItem.bind(this, pastGuesses.length)}
+            contentContainerStyle={styles.list}
+          />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.screen}>
       <Text>Opponent's guess</Text>
@@ -90,13 +144,13 @@ function GameScreen(props) {
           <Ionicons name="md-add" size={24} color="black" />
         </MainButton>
       </Card>
-      <View style={styles.listContainer}>
+      <View style={listContainerStyles}>
         {/* <ScrollView contentContainerStyle={styles.list}>
           {pastGuesses.map((guess, index) => renderListItem(guess, (pastGuesses.length - index)))}
         </ScrollView> */}
 
         <FlatList
-          keyExtractor={item => item.toString()}
+          keyExtractor={(item) => item.toString()}
           data={pastGuesses}
           renderItem={renderListItem.bind(this, pastGuesses.length)}
           contentContainerStyle={styles.list}
@@ -115,9 +169,12 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginTop: 20,
+    marginTop: Dimensions.get("window").height > 600 ? 20 : 10,
     width: 300,
     maxWidth: "80%",
+  },
+  buttonLandscape: {
+    margin: 12
   },
   listItem: {
     borderColor: "#ccc",
@@ -132,6 +189,10 @@ const styles = StyleSheet.create({
   listContainer: {
     flex: 1,
     width: "60%",
+  },
+  listContainerSmall: {
+    flex: 1,
+    width: "100%",
   },
   list: {
     flexGrow: 1,

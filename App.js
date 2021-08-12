@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
-import AppLoading from 'expo-app-loading';
+import { StyleSheet, View, SafeAreaView } from "react-native";
+import AppLoading from "expo-app-loading";
 
 import Header from "./components/Header";
 import StartGameScreen from "./screens/StartGameScreen";
@@ -23,13 +23,15 @@ export default function App() {
 
   if (!dataLoaded) {
     return (
-      <AppLoading
-        startAsync={fetchFonts}
-        onFinish={() => {
-          setDataLoaded(true);
-        }}
-        onError={(error) => console.log(error)}
-      />
+      <SafeAreaView>
+        <AppLoading
+          startAsync={fetchFonts}
+          onFinish={() => {
+            setDataLoaded(true);
+          }}
+          onError={(error) => console.log(error)}
+        />
+      </SafeAreaView>
     );
   }
 
